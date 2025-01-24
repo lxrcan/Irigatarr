@@ -1,1 +1,70 @@
-/.DS_Store
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# macOS Finder attributes
+Icon?
+._*
+
+# macOS metadata files
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Arduino project files
+*.ino.*
+*.ino.cpp
+*.ino.d
+*.ino.elf
+*.ino.eep
+*.ino.hex
+*.ino.bin
+*.ino.map
+*.ino.s
+*.ino.sym
+*.ino.lst
+
+# Compiled object files and build artifacts
+*.o
+*.a
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.sym
+*.lst
+*.s
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Libraries and external dependencies (optional, if using Arduino IDE library manager)
+libraries/
+
+# PlatformIO specific files
+.vscode/
+.platformio/
+.pio/
+
+# Secrets and configurations
+config.h
+config.cpp
+credentials.h
+*.key
+*.pem
+*.crt
+
+# Backup files
+*.bak
+*.swp
+*.swo
+*~
