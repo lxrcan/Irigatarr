@@ -6,7 +6,7 @@ const char* ssid = "rs500m-19a9b1-1";
 const char* password = "978dd720f969c";
 
 // Plant Configuration
-const char* plant_name = "My Lovely Plant"; // Define the plant name
+const char* plant_name = "Monstera1"; // Define the plant name
 
 // MQTT Configuration
 const char* mqtt_server = "192.168.1.46";

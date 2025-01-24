@@ -39,15 +39,15 @@ void connectToMQTT() {
             client.subscribe(pump_control_topic);
 
             // Publish discovery message for soil moisture
-            String soilDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"name\":\"" + String(plant_name) + " Environmental Sensor\",\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"name\":\"" + String(plant_name) + " Soil Moisture\",\"state_topic\":\"" + String(soil_sensor_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"soil_sensor_" + String(plant_name) + "\",\"device_class\":\"moisture\"}";
+            String soilDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(soil_sensor_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"soil_sensor_" + String(plant_name) + "\",\"device_class\":\"moisture\"}";
             client.publish("homeassistant/sensor/soil_moisture/config", soilDiscoveryPayload.c_str(), true);
 
             // Publish discovery message for temperature
-            String tempDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"name\":\"" + String(plant_name) + " Environmental Sensor\",\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"name\":\"" + String(plant_name) + " Temperature\",\"state_topic\":\"" + String(temperature_topic) + "\",\"unit_of_measurement\":\"°C\",\"unique_id\":\"temperature_sensor_" + String(plant_name) + "\",\"device_class\":\"temperature\"}";
+            String tempDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(temperature_topic) + "\",\"unit_of_measurement\":\"°C\",\"unique_id\":\"temperature_sensor_" + String(plant_name) + "\",\"device_class\":\"temperature\"}";
             client.publish("homeassistant/sensor/temperature/config", tempDiscoveryPayload.c_str(), true);
 
             // Publish discovery message for humidity
-            String humidityDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"name\":\"" + String(plant_name) + " Environmental Sensor\",\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"name\":\"" + String(plant_name) + " Humidity\",\"state_topic\":\"" + String(humidity_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"humidity_sensor_" + String(plant_name) + "\",\"device_class\":\"humidity\"}";
+            String humidityDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(humidity_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"humidity_sensor_" + String(plant_name) + "\",\"device_class\":\"humidity\"}";
             client.publish("homeassistant/sensor/humidity/config", humidityDiscoveryPayload.c_str(), true);
 
         } else {

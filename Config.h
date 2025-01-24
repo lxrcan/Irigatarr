@@ -5,6 +5,10 @@
 extern const char* ssid;
 extern const char* password;
 
+// Plant Configuration
+extern const char* plant_name;
+
+
 // MQTT Configuration
 extern const char* mqtt_server;
 extern const int mqtt_port;
@@ -19,8 +23,5 @@ extern const char* humidity_topic;
 extern const int pump_pin;
 extern const int soil_sensor_pin;
 extern const int dht_pin;
-
-// Plant Configuration
-extern const char* plant_name;
 
 #endif // CONFIG_H
