@@ -13,7 +13,7 @@ private:
     unsigned long lastStopTime = 0;          // Last time the pump stopped
     unsigned long nextActionTime = 0;        // Next ON/OFF action time
 
-    void publishStatus(const char* message) {
+    void publishStatus( const char* message) {
         client.publish(status_topic, message);
         Serial.println(message);
     }
@@ -22,8 +22,10 @@ public:
     PumpController(PubSubClient& mqttClient, int pin)
         : client(mqttClient) {
         pinMode(pump_pin, OUTPUT);
-        digitalWrite(pump_pin, LOW);
+        digitalWrite(pump_pin, LOW); // Ensure pump is OFF
+        Serial.println("Pump initialized to LOW (OFF).");
     }
+
 
     void handlePumpCommand(const char* command) {
         unsigned long now = millis();

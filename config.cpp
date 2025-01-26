@@ -33,7 +33,7 @@ const char* pump_control_topic = "home/control_pump";    // Pump Control Command
 const char* status_topic = "home/device_status";         // Device Status Topic
 
 // Pump Control Preferences
-unsigned long cooldown_period = 600000;  // Cooldown period after a pump cycle in ms (10 minutes, 0 to disable)
-unsigned long max_cycle_time = 3600000;  // Maximum pump cycle time in ms (1 hour)
-unsigned long pump_on_duration = 300000; // Pump ON duration per cycle in ms (5 minutes)
-unsigned long pump_off_duration = 600000; // Pump OFF duration per cycle in ms (10 minutes)
+unsigned long cooldown_period = 0;  // 600000 Cooldown period after a pump cycle in ms (10 minutes, 0 to disable)
+unsigned long max_cycle_time = 60000;  // Maximum pump cycle time in ms (1 hour)
+unsigned long pump_on_duration = 6000; // Pump ON duration per cycle in ms (5 minutes)
+unsigned long pump_off_duration = 6000; // Pump OFF duration per cycle in ms (10 minutes)

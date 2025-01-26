@@ -11,16 +11,13 @@ private:
     PubSubClient& client;
     DHT& dhtSensor;
 
-    void publishSensorData(const char* topic, float value) {
-        if (!isnan(value)) {
-            client.publish(topic, String(value).c_str());
-            Serial.print(topic);
-            Serial.print(": ");
-            Serial.println(value);
-        } else {
-            Serial.print("Failed to read ");
-            Serial.println(topic);
-        }
+    void publishSensorData(const char* topic, float value, int decimalPlaces = 2) {
+        char formattedValue[10];
+        dtostrf(value, 1, decimalPlaces, formattedValue);
+        client.publish(topic, formattedValue);
+        Serial.print(topic);
+        Serial.print(": ");
+        Serial.println(formattedValue);
     }
 
 public:
@@ -30,10 +27,8 @@ public:
     void readAndPublishSensors() {
         // Read soil moisture
         int rawValue = analogRead(soil_sensor_pin);
-        int soilValue = map(rawValue, 0, 1023, 0, 100);
-        client.publish(soil_sensor_topic, String(soilValue).c_str());
-        Serial.print("Soil Moisture (%): ");
-        Serial.println(soilValue);
+        float soilMoisture = map(rawValue, 0, 1023, 0, 100);
+        publishSensorData(soil_sensor_topic, soilMoisture, 0);
 
         // Read temperature
         float temperature = dhtSensor.readTemperature();
