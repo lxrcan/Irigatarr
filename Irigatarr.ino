@@ -4,12 +4,17 @@
 #include "DHT.h" // Include the DHT library for temperature and humidity
 
 #include "Config.h"
+#include "PumpControl.h"
+
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 #define DHTPIN D4  // Define the pin for the DHT sensor
 #define DHTTYPE DHT11 // Change to DHT22 if you’re using a DHT22 sensor
+
+PumpControl pumpControl(client, pump_pin, status_topic, pump_control_topic);
+
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -38,16 +43,20 @@ void connectToMQTT() {
             // Subscribe to pump control topic
             client.subscribe(pump_control_topic);
 
-            // Publish discovery message for soil moisture
-            String soilDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(soil_sensor_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"soil_sensor_" + String(plant_name) + "\",\"device_class\":\"moisture\"}";
+            // Pump Control Button Discovery
+            String pumpButtonDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"name\":\"" + String(plant_name) + " Environmental Sensor\",\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"name\":\"Pump Control\",\"command_topic\":\"" + String(pump_control_topic) + "\",\"payload_press\":\"PRESS\",\"unique_id\":\"pump_button_" + String(plant_name) + "\",\"device_class\":\"button\"}";
+            client.publish("homeassistant/button/pump_control/config", pumpButtonDiscoveryPayload.c_str(), true);
+
+            // Soil Moisture Discovery
+            String soilDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"name\":\"" + String(plant_name) + " Environmental Sensor\",\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(soil_sensor_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"soil_sensor_" + String(plant_name) + "\",\"device_class\":\"moisture\",\"name\":\"Soil Moisture\"}";
             client.publish("homeassistant/sensor/soil_moisture/config", soilDiscoveryPayload.c_str(), true);
 
-            // Publish discovery message for temperature
-            String tempDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(temperature_topic) + "\",\"unit_of_measurement\":\"°C\",\"unique_id\":\"temperature_sensor_" + String(plant_name) + "\",\"device_class\":\"temperature\"}";
+            // Temperature Discovery
+            String tempDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"name\":\"" + String(plant_name) + " Environmental Sensor\",\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(temperature_topic) + "\",\"unit_of_measurement\":\"°C\",\"unique_id\":\"temperature_sensor_" + String(plant_name) + "\",\"device_class\":\"temperature\",\"name\":\"Temperature\"}";
             client.publish("homeassistant/sensor/temperature/config", tempDiscoveryPayload.c_str(), true);
 
-            // Publish discovery message for humidity
-            String humidityDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(humidity_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"humidity_sensor_" + String(plant_name) + "\",\"device_class\":\"humidity\"}";
+            // Humidity Discovery
+            String humidityDiscoveryPayload = "{\"device\":{\"identifiers\":[\"" + String(plant_name) + "\"],\"name\":\"" + String(plant_name) + " Environmental Sensor\",\"model\":\"ESP8266\",\"manufacturer\":\"Custom\"},\"availability_topic\":\"" + String(status_topic) + "\",\"state_topic\":\"" + String(humidity_topic) + "\",\"unit_of_measurement\":\"%\",\"unique_id\":\"humidity_sensor_" + String(plant_name) + "\",\"device_class\":\"humidity\",\"name\":\"Humidity\"}";
             client.publish("homeassistant/sensor/humidity/config", humidityDiscoveryPayload.c_str(), true);
 
         } else {
