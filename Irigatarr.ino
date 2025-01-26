@@ -1,91 +1,136 @@
+// Simple Irrigation System
+
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include "DHT.h"
-#include "Config.h"
-#include "SensorManager.h"
-#include "PumpController.h"
+#include <DHT.h>
 
-// Create instances for WiFi and MQTT
+// Configurations
+const char* ssid = "rs500m-19a9b1-1";
+const char* password = "978dd720f969c";
+const char* mqtt_server = "192.168.1.46";
+const int mqtt_port = 1883;
+
+const char* soil_sensor_topic = "home/soil_moisture";
+const char* temperature_topic = "home/temperature";
+const char* humidity_topic = "home/humidity";
+const char* pump_control_topic = "home/control_pump";
+const char* status_topic = "home/device_status";
+
+const int pump_pin = 5;
+const int soil_sensor_pin = A0;
+const int dht_pin = 2;
+
+const unsigned long cooldown_period = 600000; // 10 minutes
+const unsigned long max_cycle_time = 60000;   // 1 minute
+const unsigned long pump_on_duration = 6000;  // 6 seconds
+const unsigned long pump_off_duration = 6000; // 6 seconds
+
 WiFiClient espClient;
 PubSubClient client(espClient);
+DHT dht(dht_pin, DHT22);
 
-// Create DHT sensor instance
-DHT dht(dht_pin, DHT11); // Replace DHT11 with DHT22 if needed
+bool isRunning = false;
+unsigned long cycleStartTime = 0;
+unsigned long lastStopTime = 0;
+unsigned long nextActionTime = 0;
 
-// Create instances of SensorManager and PumpController
-SensorManager sensorManager(client, soil_sensor_pin, dht, soil_sensor_topic, temperature_topic, humidity_topic);
-PumpController pumpController(client, pump_pin, status_topic, pump_control_topic);
-
-void connectToWiFi() {
+void connectWiFi() {
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
+        delay(1000);
+        Serial.println("Connecting to WiFi...");
     }
-    Serial.println("\nWiFi connected");
+    Serial.println("WiFi connected.");
 }
 
-void connectToMQTT() {
+void connectMQTT() {
     while (!client.connected()) {
-        Serial.print("Connecting to MQTT...");
-        if (client.connect("ESP8266_PumpController")) {
-            Serial.println("connected");
-
-            // Subscribe to pump control commands
+        if (client.connect("IrrigationSystem")) {
+            Serial.println("Connected to MQTT broker.");
             client.subscribe(pump_control_topic);
-
-            // Publish initial status
-            client.publish(status_topic, "online", true);
         } else {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" retrying in 5 seconds...");
             delay(5000);
+            Serial.println("Retrying MQTT connection...");
         }
     }
 }
 
-// MQTT Callback
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
-    String message = "";
-    for (unsigned int i = 0; i < length; i++) {
-        message += (char)payload[i];
+void publishSensorData(const char* topic, float value, int decimalPlaces = 2) {
+    char buffer[10];
+    dtostrf(value, 1, decimalPlaces, buffer);
+    client.publish(topic, buffer);
+}
+
+void readAndPublishSensors() {
+    int rawValue = analogRead(soil_sensor_pin);
+    float soilMoisture = map(rawValue, 0, 1023, 0, 100);
+    publishSensorData(soil_sensor_topic, soilMoisture, 0);
+
+    float temperature = dht.readTemperature();
+    publishSensorData(temperature_topic, temperature);
+
+    float humidity = dht.readHumidity();
+    publishSensorData(humidity_topic, humidity);
+}
+
+void handlePumpCommand(char* topic, byte* payload, unsigned int length) {
+    String command((char*)payload);
+    unsigned long now = millis();
+
+    if (command == "ON" && now - lastStopTime >= cooldown_period) {
+        isRunning = true;
+        cycleStartTime = millis();
+        nextActionTime = millis() + pump_on_duration;
+        digitalWrite(pump_pin, HIGH);
+        client.publish(status_topic, "Pump cycle started.");
+    } else if (command == "OFF") {
+        isRunning = false;
+        digitalWrite(pump_pin, LOW);
+        client.publish(status_topic, "Pump stopped.");
+    }
+}
+
+void managePumpCycle() {
+    if (!isRunning) return;
+
+    unsigned long now = millis();
+
+    if (now - cycleStartTime >= max_cycle_time) {
+        isRunning = false;
+        digitalWrite(pump_pin, LOW);
+        lastStopTime = millis();
+        client.publish(status_topic, "Pump cycle ended: Max cycle time reached.");
+        return;
     }
 
-    if (String(topic) == pump_control_topic) {
-        pumpController.handlePumpCommand(message.c_str());
+    if (digitalRead(pump_pin) == HIGH && now >= nextActionTime) {
+        digitalWrite(pump_pin, LOW);
+        nextActionTime = now + pump_off_duration;
+        client.publish(status_topic, "Pump OFF: Rest period.");
+    } else if (digitalRead(pump_pin) == LOW && now >= nextActionTime) {
+        digitalWrite(pump_pin, HIGH);
+        nextActionTime = now + pump_on_duration;
+        client.publish(status_topic, "Pump ON: Watering.");
     }
 }
 
 void setup() {
     Serial.begin(115200);
-
-    // Initialize GPIO pins
     pinMode(pump_pin, OUTPUT);
     digitalWrite(pump_pin, LOW);
 
-    // Initialize DHT sensor
-    dht.begin();
-
-    // Connect to WiFi and MQTT
-    connectToWiFi();
+    connectWiFi();
     client.setServer(mqtt_server, mqtt_port);
-    client.setCallback(mqttCallback);
+    client.setCallback(handlePumpCommand);
+
+    dht.begin();
 }
 
 void loop() {
-    // Ensure MQTT connection
-    if (!client.connected()) {
-        connectToMQTT();
-    }
+    if (!client.connected()) connectMQTT();
     client.loop();
 
-    // Read and publish sensor data
-    sensorManager.readAndPublishSensors();
-
-    // Manage pump cycle
-    pumpController.manageCycle();
-
-    // Delay for stability
-    delay(1000);
+    readAndPublishSensors();
+    managePumpCycle();
+    delay(1000); // Adjust delay for sensor readings
 }
