@@ -1,12 +1,12 @@
 #include "Config.h"
 
 // ===============================
-// System Configuration (Do Not Edit)
+// System Configuration
 // ===============================
 
 // Wi-Fi Configuration
-const char* ssid = "Your_SSID";          // Replace with your Wi-Fi SSID
-const char* password = "Your_Password";  // Replace with your Wi-Fi Password
+const char* ssid = "rs500m-19a9b1-1";          // Replace with your Wi-Fi SSID
+const char* password = "978dd720f969c";        // Wi-Fi Password
 
 // MQTT Configuration
 const char* mqtt_server = "192.168.1.46";  // Replace with your MQTT Broker IP Address
