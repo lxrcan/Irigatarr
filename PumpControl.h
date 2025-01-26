@@ -6,56 +6,112 @@
 
 class PumpControl {
 private:
-    PubSubClient& mqttClient;
+    PubSubClient& client;
     int pumpPin;
     const char* statusTopic;
     const char* controlTopic;
-    unsigned long lastActivationTime;
-    bool isRunning;
-    const unsigned long maxRunTime = 20000; // Max pump run time in milliseconds
 
-public:
-    PumpControl(PubSubClient& client, int pin, const char* status, const char* control)
-        : mqttClient(client), pumpPin(pin), statusTopic(status), controlTopic(control), lastActivationTime(0), isRunning(false) {}
+    bool manualMode = false; // Tracks if manual mode is active
+    bool isPumpRunning = false; // Tracks if the pump is currently running
 
-    void init() {
-        pinMode(pumpPin, OUTPUT);
-        digitalWrite(pumpPin, LOW);
+    unsigned long lastActivationTime = 0; // Tracks the last time the pump was activated
+    unsigned long lastStopTime = 0; // Tracks the last time the pump stopped
+    unsigned long cooldownPeriod = 600000; // Default cooldown time (10 minutes)
+    
+    unsigned long onDuration = 300000; // Pump run time per cycle (5 minutes)
+    unsigned long offDuration = 600000; // Rest time between cycles (10 minutes)
+    unsigned long pumpCycleStartTime = 0; // Tracks the start of the pump cycle
+
+    int lowerThreshold = 0; // Soil moisture level below which the pump starts
+    int upperThreshold = 1000; // Soil moisture level above which the pump stops
+
+    void publishStatus(const char* message) {
+        client.publish(statusTopic, message);
+        Serial.println(message);
     }
 
-    void handleMessage(const String& topic, const String& message) {
-        if (topic == String(controlTopic)) {
-            if (message == "ON") {
-                activatePump();
-            } else if (message == "OFF") {
-                deactivatePump();
-            } else {
-                Serial.println("Invalid pump control command received.");
+public:
+    PumpControl(PubSubClient& mqttClient, int pumpPin, const char* statusTopic, const char* controlTopic)
+        : client(mqttClient), pumpPin(pumpPin), statusTopic(statusTopic), controlTopic(controlTopic) {}
+
+    void setManualMode(bool mode) {
+        manualMode = mode;
+        publishStatus(manualMode ? "Manual mode enabled." : "Automatic mode enabled.");
+    }
+
+    void setThresholds(int lower, int upper) {
+        lowerThreshold = lower;
+        upperThreshold = upper;
+    }
+
+    void setCooldownPeriod(unsigned long cooldown) {
+        cooldownPeriod = cooldown;
+    }
+
+    void setCycleDurations(unsigned long onTime, unsigned long offTime) {
+        onDuration = onTime;
+        offDuration = offTime;
+    }
+
+    void checkPumpCycle(int soilValue) {
+        unsigned long now = millis();
+
+        // Enforce cooldown period
+        if ((now - lastStopTime) < cooldownPeriod && cooldownPeriod > 0) {
+            return; // Skip if still in cooldown
+        }
+
+        if (manualMode) {
+            // Manual mode: Trigger via Home Assistant
+            if (getHomeAssistantManualTrigger() && !isPumpRunning) {
+                publishStatus("Starting pump cycle (manual mode).");
+                startPumpCycle();
+            }
+        } else {
+            // Automatic mode: Trigger based on soil moisture
+            if (soilValue < lowerThreshold && !isPumpRunning) {
+                publishStatus("Starting pump cycle (automatic mode, moisture below threshold).");
+                startPumpCycle();
+            }
+        }
+
+        // Handle pump running logic
+        if (isPumpRunning) {
+            if ((now - pumpCycleStartTime) >= onDuration) {
+                publishStatus("Pump cycle ended (time duration reached).");
+                stopPump();
+            }
+        } else {
+            if ((now - lastStopTime) >= offDuration) {
+                // Check if soil moisture exceeds upper threshold
+                if (soilValue > upperThreshold) {
+                    publishStatus("Pump cycle not restarted (moisture above upper threshold).");
+                    return; // End irrigation session
+                } else {
+                    publishStatus("Restarting pump cycle (off duration completed).");
+                    startPumpCycle(); // Start next cycle
+                }
             }
         }
     }
 
-    void checkTimeout() {
-        if (isRunning && millis() - lastActivationTime > maxRunTime) {
-            Serial.println("Pump stopped due to timeout.");
-            deactivatePump();
-        }
-    }
-
-private:
-    void activatePump() {
-        Serial.println("Activating pump.");
+    void startPumpCycle() {
         digitalWrite(pumpPin, HIGH);
-        isRunning = true;
-        lastActivationTime = millis();
-        mqttClient.publish(statusTopic, "Pump turned ON");
+        isPumpRunning = true;
+        pumpCycleStartTime = milli   s();
+        publishStatus("Pump started.");
     }
 
-    void deactivatePump() {
-        Serial.println("Deactivating pump.");
+    void stopPump() {
         digitalWrite(pumpPin, LOW);
-        isRunning = false;
-        mqttClient.publish(statusTopic, "Pump turned OFF");
+        isPumpRunning = false;
+        lastStopTime = millis();
+        publishStatus("Pump stopped.");
+    }
+
+    bool getHomeAssistantManualTrigger() {
+        // Placeholder: Replace with actual MQTT or button trigger logic
+        return false;
     }
 };
 

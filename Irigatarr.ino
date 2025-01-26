@@ -10,6 +10,7 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+
 #define DHTPIN D4  // Define the pin for the DHT sensor
 #define DHTTYPE DHT11 // Change to DHT22 if you’re using a DHT22 sensor
 
@@ -122,6 +123,9 @@ void loop() {
     Serial.println(soilValue);
     client.publish(soil_sensor_topic, soilMessage.c_str());
 
+    // Pass soil value to PumpControl for cycle management
+    pumpControl.checkPumpCycle(soilValue);
+
     // Read temperature and humidity from DHT sensor
     float temperature = dht.readTemperature();
     float humidity = dht.readHumidity();
@@ -141,9 +145,5 @@ void loop() {
         client.publish(humidity_topic, humidityMessage.c_str());
     }
 
-    // Handle pump timeout
-      pumpControl.checkTimeout();
-
-
-    delay(3000); // Adjust as needed
+    delay(3000); // Adjust this delay as needed
 }
