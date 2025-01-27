@@ -18,19 +18,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# Arduino project files
-*.ino.*
-*.ino.cpp
-*.ino.d
-*.ino.elf
-*.ino.eep
-*.ino.hex
-*.ino.bin
-*.ino.map
-*.ino.s
-*.ino.sym
-*.ino.lst
-
 # Compiled object files and build artifacts
 *.o
 *.a
