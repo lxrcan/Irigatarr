@@ -15,6 +15,7 @@ const char* temperature_topic = "home/temperature";
 const char* humidity_topic = "home/humidity";
 const char* pump_control_topic = "home/control_pump";
 const char* status_topic = "home/device_status";
+const char* discovery_topic = "homeassistant/device_discovery";
 
 const int pump_pin = 5;
 const int soil_sensor_pin = A0;
@@ -48,11 +49,29 @@ void connectMQTT() {
         if (client.connect("IrrigationSystem")) {
             Serial.println("Connected to MQTT broker.");
             client.subscribe(pump_control_topic);
+            publishDiscoveryPayload();
         } else {
             delay(5000);
             Serial.println("Retrying MQTT connection...");
         }
     }
+}
+
+void publishDiscoveryPayload() {
+    String payload = "{\"name\":\"IrrigationSystem\",\"state_topic\":\"";
+    payload += status_topic;
+    payload += "\",\"command_topic\":\"";
+    payload += pump_control_topic;
+    payload += "\",\"sensors\":{\"soil_moisture\":\"";
+    payload += soil_sensor_topic;
+    payload += "\",\"temperature\":\"";
+    payload += temperature_topic;
+    payload += "\",\"humidity\":\"";
+    payload += humidity_topic;
+    payload += "\"}}";
+    client.publish(discovery_topic, payload.c_str(), true);
+    Serial.println("Published discovery payload:");
+    Serial.println(payload);
 }
 
 void publishSensorData(const char* topic, float value, int decimalPlaces = 2) {
